@@ -8,8 +8,8 @@ const PackageCard = ({ pkg, onSelect }) => {
         <div
             dir="rtl"
             className={`relative p-6 rounded-3xl border-2 transition-all text-right ${pkg.isPrivate
-                    ? 'border-purple-500 bg-purple-50 shadow-md'
-                    : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm'
+                ? 'border-purple-500 bg-purple-50 shadow-md'
+                : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm'
                 }`}
         >
             {/* תגית חבילה פרטית */}
@@ -35,8 +35,8 @@ const PackageCard = ({ pkg, onSelect }) => {
             <button
                 onClick={() => onSelect(pkg)}
                 className={`w-full py-4 rounded-2xl font-black text-lg transition-all transform active:scale-95 ${pkg.isPrivate
-                        ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200 shadow-lg'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 shadow-lg'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200 shadow-lg transform hover:-translate-y-1 transition-all'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 shadow-lg transform hover:-translate-y-1 transition-all'
                     }`}
             >
                 בחירה והמשך

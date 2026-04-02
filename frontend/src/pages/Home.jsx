@@ -14,20 +14,13 @@ const Home = () => {
             try {
                 const token = localStorage.getItem('token');
 
-                // אם יש טוקן, ניגש לנתיב המוגן. אם לא, לציבורי.
-                // שים לב: Axios כבר מוסיף את ה-baseURL, אז אנחנו כותבים רק את ההמשך
                 const endpoint = token ? '/packages' : '/packages/public';
-
-                console.log(`Fetching from: ${endpoint}`); // לבדיקה ב-Console
-
                 const { data } = await api.get(endpoint);
                 setPackages(data);
             } catch (err) {
                 console.error("Error fetching packages:", err);
 
-                // אם הסוכן מחובר אבל הטוקן פג תוקף, ננסה להביא לפחות את הציבורי
                 if (err.response) {
-                    // השרת ענה עם שגיאה (למשל 401)
                     const { data } = await api.get('/packages/public');
                     setPackages(data);
                 }
@@ -47,8 +40,6 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-gray-50" dir="rtl">
-            <Navbar />
-
             <main className="max-w-6xl mx-auto py-16 px-6">
                 <header className="text-center mb-12">
                     <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">החבילות הכי משתלמות בשוק</h1>
