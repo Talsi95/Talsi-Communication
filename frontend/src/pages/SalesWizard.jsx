@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QuestionStep from '../components/QuestionStep';
 import api from '../api/axios';
+import { useNavigate } from 'react-router-dom';
+import CartSummary from '../components/CartSummary';
 
 const SalesWizard = () => {
 
@@ -27,6 +29,8 @@ const SalesWizard = () => {
     const [personalData, setPersonalData] = useState({});
     const [tempNumbers, setTempNumbers] = useState([]);
     const [showErrors, setShowErrors] = useState(false);
+    const [stepHistory, setStepHistory] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchPackages = async () => {
@@ -41,7 +45,11 @@ const SalesWizard = () => {
                     const parsed = JSON.parse(savedPkg);
                     const fullPkg = data.find(p => p._id === parsed._id || p.name === parsed.name);
                     if (fullPkg) {
-                        setCurrentLine(prev => ({ ...prev, package: fullPkg }));
+                        setCurrentLine(prev => ({
+                            ...prev,
+                            package: fullPkg,
+                            id: Date.now()
+                        }));
                         setStep('TYPE');
                     } else {
                         setStep('PACKAGES');
@@ -67,12 +75,6 @@ const SalesWizard = () => {
         setTempNumbers(generateRandomNumbers());
     }, []);
 
-    const totalPrice = useMemo(() => {
-        const linesTotal = lines.reduce((acc, curr) => acc + (Number(curr.package?.price) || 0), 0);
-        const currentTotal = Number(currentLine.package?.price) || 0;
-        return linesTotal + currentTotal;
-    }, [lines, currentLine.package]);
-
     const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     const isValidIsraeliID = (id) => {
@@ -90,7 +92,7 @@ const SalesWizard = () => {
             case 'PACKAGES':
                 return !!currentLine.package;
             case 'TYPE':
-                return !!data.type;
+                return !!currentLine.type;
             case 'NUMBER_PICK':
                 return currentLine.phoneNumber && currentLine.phoneNumber.replace(/-/g, '').length >= 9;
             case 'PERSONAL':
@@ -106,32 +108,56 @@ const SalesWizard = () => {
         }
     };
 
-    const handleNext = (nextStep) => {
-        if (currentLine.type === 'port' && (!currentLine.phoneNumber || currentLine.phoneNumber.length < 9)) {
-            setShowErrors(true);
-            return;
+    const handleBack = () => {
+        if (stepHistory.length > 0) {
+            const prevHistory = [...stepHistory];
+            const lastStep = prevHistory.pop();
+            setStepHistory(prevHistory);
+            setStep(lastStep);
+        } else {
+            navigate('/');
         }
-        setStep(nextStep);
-        setShowErrors(false);
     };
 
+    const handleNext = (nextStep) => {
+        if (!isStepValid(formData)) {
+            setShowErrors(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setShowErrors(false);
+
+        setStepHistory(prev => [...prev, step]);
+
+        setStep(nextStep);
+    };
 
     const refreshNumbers = () => {
         setTempNumbers(generateRandomNumbers());
     };
 
     const addLineAndContinue = (choice) => {
-        const updatedLines = [...lines, { ...currentLine }];
-        setLines(updatedLines);
+        setLines(prevLines => {
+            const lineIndex = prevLines.findIndex(l => l.id === currentLine.id);
 
-        setCurrentLine({ package: null, type: null, phoneNumber: '' });
+            if (lineIndex !== -1) {
+                const updated = [...prevLines];
+                updated[lineIndex] = { ...currentLine };
+                return updated;
+            } else {
+                return [...prevLines, { ...currentLine }];
+            }
+        });
 
         if (choice === 'more') {
+            setCurrentLine({ id: null, package: null, type: null, phoneNumber: '' });
             setStep('PACKAGES');
         } else {
             setStep('PERSONAL');
         }
     };
+
     const finalSubmit = async () => {
         try {
             const payload = {
@@ -146,304 +172,337 @@ const SalesWizard = () => {
         }
     };
 
-    const CartSummary = () => (
-        <div className="space-y-3">
-            {lines.map((l, idx) => (
-                <div key={idx} className="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                    <div className="flex justify-between text-[10px] mb-1">
-                        <span className="font-bold text-blue-600">קו {idx + 1}</span>
-                        <span className="font-bold">{l.package?.price} ₪</span>
-                    </div>
-                    <p className="text-xs font-mono">{l.phoneNumber}</p>
-                    <p className="text-[10px] text-gray-500">{l.package?.name}</p>
-                </div>
-            ))}
-
-            {currentLine.package && (
-                <div className="bg-orange-50 p-3 rounded-xl border border-orange-200 border-dashed">
-                    <div className="flex justify-between text-[10px] mb-1">
-                        <span className="font-bold text-orange-600">בתהליך...</span>
-                        <span className="font-bold">{currentLine.package?.price || 0} ₪</span>
-                    </div>
-                    <p className="text-xs font-mono">{currentLine.phoneNumber || 'ממתין למספר'}</p>
-                    <p className="text-[10px] text-gray-500">{currentLine.package?.name}</p>
-                </div>
-            )}
-
-            <div className="pt-3 border-t-2 border-dashed mt-4">
-                <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-700">סה"כ לתשלום:</span>
-                    <span className="text-xl font-black text-blue-600">{totalPrice} ₪</span>
-                </div>
-            </div>
-        </div>
-    );
 
     if (loading) return <div className="p-10 text-center">טוען חבילות...</div>;
 
     return (
-        <div className="bg-gray-50 min-h-screen p-4" dir="rtl">
+        <div className="min-h-screen bg-[#0f172a] font-sans text-slate-100 p-4 md:p-12 relative overflow-hidden" dir="rtl">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[150px] -z-10"></div>
 
-            {/* Sidebar למובייל - מופיע למעלה רק אם יש קווים */}
-            {lines.length > 0 && (
-                <div className="md:hidden bg-white p-3 shadow-md sticky top-0 z-50 border-b border-blue-100">
-                    <details className="outline-none">
-                        <summary className="list-none flex justify-between items-center cursor-pointer">
-                            <span className="font-bold text-blue-600">הסל שלי ({lines.length} קווים) 🛒</span>
-                            <span className="text-blue-700 font-black">{lines.reduce((acc, curr) => acc + (curr.package?.price || 0), 0)} ₪ ▾</span>
-                        </summary>
-                        <div className="mt-3 max-h-40 overflow-y-auto">
-                            <CartSummary />
-                        </div>
-                    </details>
-                </div>
-            )}
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-center gap-12 relative z-10">
 
-            {/* שלב 0: בחירת חבילה */}
-            {step === 'PACKAGES' && (
-                <QuestionStep question="בוא נבחר חבילה לקו" description="בחר אחת מהחבילות המשתלמות שלנו">
-                    <div className="grid grid-cols-1 gap-3">
-                        {packages.map(pkg => (
-                            <button
-                                key={pkg._id}
-                                onClick={() => {
-                                    setCurrentLine({ ...currentLine, package: pkg });
-                                    setStep('TYPE');
-                                }}
-                                className={`p-4 bg-white border-2 rounded-xl transition ${currentLine.package?._id === pkg._id ? 'border-blue-500 bg-blue-50' : 'border-gray-100'}`}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <span className="font-bold text-lg">{pkg.name}</span>
-                                    <span className="text-blue-600 font-black">{pkg.price} ₪</span>
+                {lines.length > 0 && (
+                    <div className="md:hidden sticky top-[72px] z-40 px-4 py-2">
+                        <div className="bg-white/[0.05] backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+                            <details className="group outline-none">
+                                <summary className="list-none flex justify-between items-center p-4 cursor-pointer select-none">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-teal-400 text-lg">🛒</span>
+                                        <span className="font-black text-white text-sm tracking-wide">
+                                            הסל שלי ({lines.length})
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-left">
+                                            <span className="text-teal-400 font-black text-lg leading-none">
+                                                {lines.reduce((acc, curr) => acc + (Number(curr.package?.price) || 0), 0)} ₪
+                                            </span>
+                                        </div>
+                                        <span className="text-gray-500 transition-transform duration-300 group-open:rotate-180">
+                                            ▼
+                                        </span>
+                                    </div>
+                                </summary>
+
+                                <div className="px-4 pb-4 max-h-60 overflow-y-auto border-t border-white/5 bg-black/20">
+                                    <div className="py-2">
+                                        <CartSummary
+                                            lines={lines}
+                                            currentLine={currentLine}
+                                            step={step}
+                                        />
+                                    </div>
                                 </div>
-                            </button>
-                        ))}
-                    </div>
-                </QuestionStep>
-            )}
-
-            {/* שלב 1: סוג פעולה */}
-            {step === 'TYPE' && (
-                <QuestionStep question="היי! מה אנחנו עושים היום?">
-                    <div className="space-y-3">
-                        <button
-                            onClick={() => {
-                                setCurrentLine({ ...currentLine, type: 'new' });
-                                setStep('NUMBER_PICK');
-                            }}
-                            className="w-full p-4 text-lg font-bold border-2 border-blue-500 text-blue-600 rounded-xl hover:bg-blue-50 transition"
-                        >
-                            קו חדש ומדליק
-                        </button>
-                        <button
-                            onClick={() => {
-                                setCurrentLine({ ...currentLine, type: 'port' });
-                                setStep('NUMBER_PICK');
-                            }}
-                            className="w-full p-4 text-lg font-bold border-2 border-gray-200 text-gray-600 rounded-xl hover:border-blue-500 hover:text-blue-600 transition"
-                        >
-                            ניוד מספר קיים
-                        </button>
-                    </div>
-                </QuestionStep>
-            )}
-
-            {/* שלב 2: בחירת מספר */}
-            {step === 'NUMBER_PICK' && (
-                <QuestionStep question="איזה מספר נשייך לחבילה?" description={currentLine.type === 'new' ? "בחר מספר מהרשימה" : "הכנס את המספר לניוד"}>
-                    {currentLine.type === 'new' ? (
-                        <div className="grid grid-cols-1 gap-3">
-                            {tempNumbers.map(num => (
-                                <button
-                                    key={num}
-                                    onClick={() => {
-                                        setCurrentLine({ ...currentLine, phoneNumber: num });
-                                        setStep('ADD_MORE');
-                                    }}
-                                    className="p-4 bg-white border border-gray-200 rounded-xl hover:border-blue-500 font-mono text-xl text-center transition"
-                                >
-                                    {num}
-                                </button>
-                            ))}
-                            <button onClick={refreshNumbers} className="text-blue-500 underline text-sm w-full text-center mt-4">
-                                🔄 לא אהבתי, תראה לי עוד מספרים
-                            </button>
+                            </details>
                         </div>
+                    </div>
+                )}
 
-                    ) : (
-                        <div className="space-y-4">
-                            <input
-                                type="tel"
-                                placeholder="05X-XXXXXXX"
-                                className="w-full p-4 border rounded-xl text-center font-mono text-xl"
-                                onChange={(e) => setCurrentLine({ ...currentLine, phoneNumber: e.target.value })}
-                                value={currentLine.phoneNumber}
-                            />
-                            {showErrors && <p className="text-red-500 text-sm text-center font-bold">⚠️ נא להזין מספר טלפון תקין</p>}
-                            <button
-                                onClick={() => handleNext('ADD_MORE')}
-                                className="w-full p-4 bg-blue-600 text-white rounded-xl font-bold"
-                            >
-                                המשך
-                            </button>
-                        </div>
+                <div className="sticky top-[145px] md:top-6 z-50 h-10 flex items-center">
+                    {(stepHistory.length > 0 || step !== 'PACKAGES') && (
+                        <button
+                            onClick={handleBack}
+                            className="flex items-center gap-2 text-gray-500 hover:text-teal-400 transition-colors mr-2 group bg-[#0f172a]/80 backdrop-blur-sm pr-4 py-1 rounded-full border border-white/5"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span className="font-bold text-sm">חזרה</span>
+                        </button>
                     )}
-                </QuestionStep>
-            )}
+                </div>
 
-            {/* שלב ביניים: האם יש קווים נוספים? */}
-            {step === 'ADD_MORE' && (
-                <QuestionStep question="הקו נוסף בהצלחה!" description="האם תרצה להוסיף קווים נוספים להזמנה זו?">
-                    <div className="space-y-3">
-                        <button
-                            onClick={() => addLineAndContinue('more')}
-                            className="w-full p-4 text-lg font-bold border-2 border-blue-500 text-blue-600 rounded-xl hover:bg-blue-50 transition"
-                        >
-                            כן, יש לי עוד קו להוסיף ➕
-                        </button>
-                        <button
-                            onClick={() => addLineAndContinue('personal')}
-                            className="w-full p-4 text-lg font-bold bg-blue-600 text-white rounded-xl shadow-lg transition"
-                        >
-                            לא תודה, המשך למילוי פרטים
-                        </button>
-                    </div>
-                </QuestionStep>
-            )}
+                <div className="w-full lg:max-w-[800px] space-y-8">
 
-            {/* שלב 3: פרטים אישיים */}
-            {step === 'PERSONAL' && (
-                <QuestionStep question="כמעט סיימנו, רק פרטי זיהוי">
-                    <div className="space-y-4">
-                        {/* שם מלא */}
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="שם מלא"
-                                className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && (!formData.fullName || formData.fullName.trim().split(' ').length < 2)
-                                    ? 'border-red-500'
-                                    : 'border-gray-200'
-                                    }`}
-                                onChange={(e) => {
-                                    setFormData({ ...formData, fullName: e.target.value })
-                                }}
-                                value={formData.fullName || ''}
-                            />
-
-                            {showErrors && (!formData.fullName || formData.fullName.trim().split(' ').length < 2) && (
-                                <p className="text-red-500 text-xs mt-1 font-bold">⚠️ יש להזין שם פרטי ומשפחה</p>
-                            )}
-                        </div>
-
-                        {/* תעודת זהות עם בדיקת חוקיות */}
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="מספר תעודת זהות"
-                                maxLength="9"
-                                className={`w-full p-4 border rounded-xl outline-none focus:ring-2 ${showErrors && !isValidIsraeliID(formData.idNumber) ? 'border-red-500' : 'border-gray-200'}`}
-                                onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
-                                value={formData.idNumber || ''}
-                            />
-                            {showErrors && !isValidIsraeliID(formData.idNumber) && (
-                                <p className="text-red-500 text-xs mt-1 font-bold">⚠️ מספר תעודת זהות לא תקין</p>
-                            )}
-                        </div>
-
-                        {/* אימייל */}
-                        <div>
-                            <input
-                                type="email"
-                                placeholder="כתובת אימייל"
-                                className={`w-full p-4 border rounded-xl outline-none focus:ring-2 ${showErrors && !isEmailValid(formData.email) ? 'border-red-500' : 'border-gray-200'}`}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                value={formData.email || ''}
-                            />
-                            {showErrors && !isEmailValid(formData.email) && (
-                                <p className="text-red-500 text-xs mt-1 font-bold">⚠️ יש להזין כתובת אימייל תקינה</p>
-                            )}
-                        </div>
-
-
-                        {/* כתובת מגורים - חיבור ל-Google Maps API */}
-                        <div className="space-y-4">
-                            {/* עיר */}
-                            <div>
-                                <input
-                                    type="text"
-                                    placeholder="עיר"
-                                    className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.city ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
-                                        }`}
-                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                    value={formData.city || ''}
-                                />
+                    {step === 'PACKAGES' && (
+                        <QuestionStep question="בוא נבחר חבילה לקו" description="בחר אחת מהחבילות המשתלמות שלנו">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {packages.map(pkg => (
+                                    <button
+                                        key={pkg._id}
+                                        onClick={() => {
+                                            setStepHistory([...stepHistory, step]);
+                                            setCurrentLine({ ...currentLine, package: pkg, id: Date.now() });
+                                            setStep('TYPE');
+                                        }}
+                                        className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:border-teal-500/50 hover:bg-white/10 transition-all text-right group relative overflow-hidden"
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-lg font-black text-white group-hover:text-teal-400 transition-colors">{pkg.name}</span>
+                                            <span className="text-2xl font-black text-white">{pkg.price} ₪</span>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
+                        </QuestionStep>
+                    )}
 
-                            <div className="flex gap-2">
-                                {/* רחוב */}
-                                <div className="flex-[3]">
-                                    <input
-                                        type="text"
-                                        placeholder="רחוב"
-                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.street ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
-                                            }`}
-                                        onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                                        value={formData.street || ''}
-                                    />
+                    {step === 'TYPE' && (
+                        <QuestionStep question="היי! מה אנחנו עושים היום?">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => {
+                                        setStepHistory([...stepHistory, step]);
+                                        setCurrentLine({ ...currentLine, type: 'new' });
+                                        setStep('NUMBER_PICK');
+                                    }}
+                                    className="p-8 bg-teal-500 text-slate-900 rounded-[2.5rem] font-black text-xl shadow-lg shadow-teal-500/20 hover:scale-[1.02] transition-transform"
+                                >
+                                    קו חדש ומדליק
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setStepHistory([...stepHistory, step]);
+                                        setCurrentLine({ ...currentLine, type: 'port' });
+                                        setStep('NUMBER_PICK');
+                                    }}
+                                    className="p-8 bg-white/5 border border-white/10 text-white rounded-[2.5rem] font-black text-xl hover:bg-white/10 transition-all"
+                                >
+                                    ניוד מספר קיים
+                                </button>
+                            </div>
+                        </QuestionStep>
+                    )}
+
+                    {step === 'NUMBER_PICK' && (
+                        <QuestionStep question="איזה מספר נשייך לחבילה?" description={currentLine.type === 'new' ? "בחר מספר מהרשימה" : "הכנס את המספר לניוד"}>
+                            {currentLine.type === 'new' ? (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {tempNumbers.map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => {
+                                                setStepHistory([...stepHistory, step]);
+                                                setCurrentLine({ ...currentLine, phoneNumber: num });
+                                                setStep('ADD_MORE');
+                                            }}
+                                            className="p-5 bg-white/5 border border-white/10 rounded-2xl text-2xl font-mono tracking-widest hover:border-teal-400 hover:text-teal-400 transition-all"
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+                                    <button onClick={refreshNumbers} className="text-blue-500 underline text-sm w-full text-center mt-4">
+                                        🔄 לא אהבתי, תראה לי עוד מספרים
+                                    </button>
                                 </div>
 
-                                {/* מספר בית */}
-                                <div className="flex-[1]">
+                            ) : (
+                                <div className="space-y-4">
+                                    <input
+                                        type="tel"
+                                        placeholder="05X-XXXXXXX"
+                                        className="w-full p-4 border rounded-xl text-center font-mono text-xl"
+                                        onChange={(e) => setCurrentLine({ ...currentLine, phoneNumber: e.target.value })}
+                                        value={currentLine.phoneNumber}
+                                    />
+                                    {showErrors && <p className="text-red-500 text-sm text-center font-bold">⚠️ נא להזין מספר טלפון תקין</p>}
+                                    <button
+                                        onClick={() => {
+                                            if (!currentLine.phoneNumber || currentLine.phoneNumber.length < 9) {
+                                                setShowErrors(true);
+                                                return;
+                                            }
+                                            setStepHistory([...stepHistory, step]);
+                                            setStep('ADD_MORE');
+                                            setShowErrors(false);
+                                        }}
+                                        className="w-full py-4 bg-teal-500 text-slate-900 rounded-2xl font-black text-xl shadow-lg shadow-teal-500/20"
+                                    >
+                                        המשך
+                                    </button>
+                                </div>
+                            )}
+                        </QuestionStep>
+                    )}
+
+                    {step === 'ADD_MORE' && (
+                        <QuestionStep question="הקו נוסף בהצלחה!" description="האם תרצה להוסיף קווים נוספים להזמנה זו?">
+                            <div className="grid grid-cols-1 gap-4 mt-4">
+                                <button
+                                    onClick={() => {
+                                        setStepHistory([...stepHistory, step]);
+                                        addLineAndContinue('more');
+                                        setTempNumbers(generateRandomNumbers());
+                                    }}
+                                    className="w-full py-6 px-4 bg-white/5 border-2 border-white/10 text-white rounded-[2rem] font-black text-xl hover:bg-white/10 hover:border-teal-500/50 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3"
+                                >
+                                    כן, יש לי עוד קו להוסיף ➕
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setStepHistory([...stepHistory, step]);
+                                        addLineAndContinue('personal');
+                                    }}
+                                    className="w-full py-6 px-4 bg-teal-500 text-slate-900 rounded-[2rem] font-black text-xl shadow-xl shadow-teal-500/20 hover:bg-teal-400 transform hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                                >
+                                    לא תודה, המשך למילוי פרטים
+                                </button>
+                            </div>
+                        </QuestionStep>
+                    )}
+
+                    {step === 'PERSONAL' && (
+                        <QuestionStep question="כמעט סיימנו, רק פרטי זיהוי">
+                            <div className="space-y-4">
+                                <div>
                                     <input
                                         type="text"
-                                        placeholder="בית"
-                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.houseNumber ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
+                                        placeholder="שם מלא"
+                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && (!formData.fullName || formData.fullName.trim().split(' ').length < 2)
+                                            ? 'border-red-500'
+                                            : 'border-gray-200'
                                             }`}
-                                        onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
-                                        value={formData.houseNumber || ''}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, fullName: e.target.value })
+                                        }}
+                                        value={formData.fullName || ''}
                                     />
+
+                                    {showErrors && (!formData.fullName || formData.fullName.trim().split(' ').length < 2) && (
+                                        <p className="text-red-500 text-xs mt-1 font-bold">⚠️ יש להזין שם פרטי ומשפחה</p>
+                                    )}
                                 </div>
+
+                                <div>
+                                    <input
+                                        type="text"
+                                        placeholder="מספר תעודת זהות"
+                                        maxLength="9"
+                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 ${showErrors && !isValidIsraeliID(formData.idNumber) ? 'border-red-500' : 'border-gray-200'}`}
+                                        onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
+                                        value={formData.idNumber || ''}
+                                    />
+                                    {showErrors && !isValidIsraeliID(formData.idNumber) && (
+                                        <p className="text-red-500 text-xs mt-1 font-bold">⚠️ מספר תעודת זהות לא תקין</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="כתובת אימייל"
+                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 ${showErrors && !isEmailValid(formData.email) ? 'border-red-500' : 'border-gray-200'}`}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        value={formData.email || ''}
+                                    />
+                                    {showErrors && !isEmailValid(formData.email) && (
+                                        <p className="text-red-500 text-xs mt-1 font-bold">⚠️ יש להזין כתובת אימייל תקינה</p>
+                                    )}
+                                </div>
+
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <input
+                                            type="text"
+                                            placeholder="עיר"
+                                            className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.city ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
+                                                }`}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                            value={formData.city || ''}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <div className="flex-[3]">
+                                            <input
+                                                type="text"
+                                                placeholder="רחוב"
+                                                className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.street ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
+                                                    }`}
+                                                onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                                                value={formData.street || ''}
+                                            />
+                                        </div>
+
+                                        <div className="flex-[1]">
+                                            <input
+                                                type="text"
+                                                placeholder="בית"
+                                                className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.houseNumber ? 'border-red-500 focus:ring-red-200' : 'border-gray-200 focus:ring-blue-500'
+                                                    }`}
+                                                onChange={(e) => setFormData({ ...formData, houseNumber: e.target.value })}
+                                                value={formData.houseNumber || ''}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {showErrors && (!formData.city || !formData.street || !formData.houseNumber) && (
+                                        <p className="text-red-500 text-xs mt-1 mr-2 font-bold animate-pulse">
+                                            ⚠️ נא למלא כתובת מלאה (עיר, רחוב ומספר)
+                                        </p>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => handleNext('SUMMARY')}
+                                    className="w-full py-5 bg-teal-500 text-slate-900 rounded-3xl font-black text-xl mt-6 shadow-xl shadow-teal-500/20"
+                                >
+                                    לסיכום ההזמנה
+                                </button>
                             </div>
+                        </QuestionStep>
+                    )}
 
-                            {showErrors && (!formData.city || !formData.street || !formData.houseNumber) && (
-                                <p className="text-red-500 text-xs mt-1 mr-2 font-bold animate-pulse">
-                                    ⚠️ נא למלא כתובת מלאה (עיר, רחוב ומספר)
-                                </p>
-                            )}
+                    {step === 'SUMMARY' && (
+                        <QuestionStep question="מעולה, סיימנו!" description="בדוק שהכל תקין לפני השליחה:">
+                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] space-y-4">
+                                <p><strong>לקוח:</strong> {formData.fullName} ({formData.idNumber})</p>
+                                <p><strong>כתובת:</strong> {formData.street} {formData.houseNumber}, {formData.city}</p>
+                                <div className="border-t pt-2">
+                                    <p className="font-bold mb-2">קווים שנבחרו:</p>
+                                    {lines.map((l, i) => (
+                                        <p key={i} className="text-sm">{l.phoneNumber} - {l.package?.name} ({l.package?.price}₪)</p>
+                                    ))}
+                                </div>
+                                <p className="text-xl font-black text-blue-600 border-t pt-2">סה"כ: {lines.reduce((acc, curr) => acc + (curr.package?.price || 0), 0)} ₪</p>
+                            </div>
+                            <button onClick={finalSubmit} className="w-full py-6 bg-gradient-to-r from-teal-500 to-blue-500 text-slate-900 rounded-[2rem] font-black text-2xl shadow-2xl shadow-teal-500/20 mt-8 transform hover:scale-[1.02] transition-all">שלח הזמנה 🚀</button>
+                            <button onClick={() => setStep('PERSONAL')} className="w-full text-gray-400 text-sm underline mt-4">
+                                חזור לעריכת פרטים
+                            </button>
+                        </QuestionStep>
+                    )}
+
+                    <div className="hidden lg:block lg:col-span-4">
+                        <div className="sticky top-12 bg-white/[0.03] backdrop-blur-3xl border border-white/10 p-8 rounded-[3rem] shadow-2xl">
+                            <h3 className="text-2xl font-black text-white mb-8 flex items-center gap-3">
+                                הסל שלי
+                                <span className="text-sm bg-teal-500 text-slate-900 px-2 py-1 rounded-lg">{lines.length}</span>
+                            </h3>
+                            <CartSummary
+                                lines={lines}
+                                currentLine={currentLine}
+                                step={step}
+                            />
                         </div>
-
-                        <button onClick={() => handleNext('SUMMARY')} className="w-full p-4 bg-blue-600 text-white rounded-xl font-bold mt-4">לסיכום ההזמנה</button>
                     </div>
-                </QuestionStep>
-            )}
-
-            {/* שלב אחרון: סיכום */}
-            {step === 'SUMMARY' && (
-                <QuestionStep question="מעולה, סיימנו!" description="בדוק שהכל תקין לפני השליחה:">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border space-y-4 text-right">
-                        <p><strong>לקוח:</strong> {formData.fullName} ({formData.idNumber})</p>
-                        <p><strong>כתובת:</strong> {formData.street} {formData.houseNumber}, {formData.city}</p>
-                        <div className="border-t pt-2">
-                            <p className="font-bold mb-2">קווים שנבחרו:</p>
-                            {lines.map((l, i) => (
-                                <p key={i} className="text-sm">{l.phoneNumber} - {l.package?.name} ({l.package?.price}₪)</p>
-                            ))}
-                        </div>
-                        <p className="text-xl font-black text-blue-600 border-t pt-2">סה"כ: {lines.reduce((acc, curr) => acc + (curr.package?.price || 0), 0)} ₪</p>
-                    </div>
-                    <button onClick={finalSubmit} className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-xl mt-6 shadow-lg">שלח הזמנה 🚀</button>
-                    <button onClick={() => setStep('PERSONAL')} className="w-full text-gray-400 text-sm underline mt-4">
-                        חזור לעריכת פרטים
-                    </button>
-                </QuestionStep>
-            )}
-
-            {/* Sidebar לדסקטופ */}
-            <div className="hidden md:block w-80 bg-white border-r p-6 shadow-xl top-0">
-                <h3 className="text-xl font-bold text-blue-600 mb-4 border-b pb-2">הסל שלי 🛒</h3>
-                {lines.length === 0 ? <p className="text-gray-400 italic">הסל ריק</p> : <CartSummary />}
+                </div>
             </div>
-        </div>
+        </div >
+
+
     );
 };
 

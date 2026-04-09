@@ -15,11 +15,11 @@ const Navbar = () => {
 
     return (
         <nav className="flex justify-between items-center p-4 md:p-6 sticky top-0 z-50 
-               bg-slate-900/40 backdrop-blur-xl border-b border-white/10 
+               bg-white/[0.03] backdrop-blur-xl border-b border-white/10 
                shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]" dir="rtl">
 
             <Link to="/" className="text-2xl font-black text-white tracking-tighter hover:scale-105 transition-transform">
-                TALSI<span className="text-blue-400">-PRO</span>
+                TALSI<span className="text-teal-400">-PRO</span>
             </Link>
 
             <div>
@@ -36,8 +36,7 @@ const Navbar = () => {
                 ) : (
                     <button
                         onClick={() => navigate('/login')}
-                        className="px-6 py-2 bg-gray-900 text-white rounded-full font-bold hover:bg-gray-800 transition shadow-md"
-                    >
+                        className="px-6 py-2 bg-teal-500 text-slate-900 rounded-full font-bold hover:bg-teal-400 transition shadow-lg shadow-teal-500/20">
                         כניסת סוכנים
                     </button>
                 )}

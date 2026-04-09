@@ -17,8 +17,8 @@ router.get('/', protect, async (req, res) => {
     try {
         const packages = await Package.find({
             $or: [
-                { isPrivate: false }, // ציבורי
-                { isPrivate: true }   // כל החבילות הפרטיות (כי הוא סוכן מחובר)
+                { isPrivate: false },
+                { isPrivate: true }
             ]
         });
         res.json(packages);

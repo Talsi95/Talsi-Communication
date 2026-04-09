@@ -16,7 +16,7 @@ const AdminDashboard = () => {
     const toggleStatus = async (id, currentStatus) => {
         const newStatus = currentStatus === 'Active' ? 'Blocked' : 'Active';
         await api.patch(`/admin/agents/${id}/status`, { status: newStatus });
-        fetchAgents(); // רענון הרשימה
+        fetchAgents();
     };
 
     return (
