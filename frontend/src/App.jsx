@@ -4,10 +4,22 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import SalesWizard from './pages/SalesWizard';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import AdminDashboard from './pages/AdminDashboard';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  const userRole = localStorage.getItem('userRole');
+
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+
+  if (adminOnly && userRole !== 'Admin') {
+    return <Navigate to="/" />;
+  }
+
+  return children;
 };
 
 function App() {
@@ -19,8 +31,20 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/wizard" element={<SalesWizard />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* <Route path="/admin" element={<AdminDashboard />} /> */}
+
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <Footer />
       </Router>
     </div>
   );

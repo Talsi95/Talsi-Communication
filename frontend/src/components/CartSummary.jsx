@@ -1,6 +1,6 @@
 
 const CartSummary = ({ lines, currentLine, step }) => {
-    const isEditing = !['PERSONAL', 'SUMMARY'].includes(step);
+    const isEditing = !['PERSONAL', 'SUMMARY', 'SUCCESS'].includes(step);
 
     const totalPrice = lines.reduce((acc, curr) => acc + (Number(curr.package?.price) || 0), 0);
 

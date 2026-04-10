@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 
 
 const Navbar = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const userName = localStorage.getItem('userName');
+    const userRole = localStorage.getItem('userRole');
 
     const handleLogout = () => {
         localStorage.clear();
@@ -22,7 +24,16 @@ const Navbar = () => {
                 TALSI<span className="text-teal-400">-PRO</span>
             </Link>
 
-            <div>
+            <div className="flex items-center gap-4">
+                {token && userRole === 'Admin' && (
+                    <Link
+                        to="/admin"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white font-bold hover:bg-white/10 transition-all"
+                    >
+                        <ShieldCheck size={18} className="text-teal-400" />
+                        <span>ניהול מערכת</span>
+                    </Link>
+                )}
                 {token ? (
                     <div className="flex items-center gap-4">
                         <span className="text-gray-600 font-medium">שלום, {userName} 👋</span>

@@ -5,7 +5,6 @@ const { protect } = require('../middleware/auth');
 
 router.get('/public', async (req, res) => {
     try {
-        // מחזירים רק חבילות שהן לא פרטיות
         const publicPackages = await Package.find({ isPrivate: false });
         res.json(publicPackages);
     } catch (err) {

@@ -3,6 +3,7 @@ import QuestionStep from '../components/QuestionStep';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import CartSummary from '../components/CartSummary';
+import { Check } from 'lucide-react';
 
 const SalesWizard = () => {
 
@@ -100,6 +101,7 @@ const SalesWizard = () => {
                     data.fullName?.trim().split(' ').length >= 2 &&
                     isEmailValid(data.email) &&
                     isValidIsraeliID(data.idNumber) &&
+                    data.contactPhone?.length >= 9 &&
                     formData.city?.trim() &&
                     formData.street?.trim() &&
                     formData.houseNumber?.trim());
@@ -161,14 +163,30 @@ const SalesWizard = () => {
     const finalSubmit = async () => {
         try {
             const payload = {
-                ...personalData,
-                lines: lines,
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.contactPhone || '',
+                idNumber: formData.idNumber,
+                lines: lines.map(line => ({
+                    package: line.package._id,
+                    type: line.type,
+                    phoneNumber: line.phoneNumber,
+                })),
+                totalAmount: lines.reduce((acc, curr) => acc + (Number(curr.package.price) || 0), 0),
+                source: 'web',
             };
-            await api.post('/applications/save-step', payload);
-            alert("ההזמנה נשלחה בהצלחה!");
+
+            await api.post('/applications/save-step', {
+                stepData: payload,
+                nextStep: 'COMPLETED'
+            });
+
+            setStep('SUCCESS');
+            localStorage.removeItem('selectedPackage');
+
         } catch (err) {
-            console.error(err);
-            alert("שגיאה בשליחת ההזמנה");
+            console.error("Submission error:", err);
+            alert(err.response?.data?.message || "שגיאה בשליחת ההזמנה, אנא פנה לצוות התמיכה");
         }
     };
 
@@ -411,6 +429,19 @@ const SalesWizard = () => {
                                     )}
                                 </div>
 
+                                <div>
+                                    <input
+                                        type="tel"
+                                        placeholder="טלפון ליצירת קשר"
+                                        className={`w-full p-4 border rounded-xl outline-none focus:ring-2 transition-all ${showErrors && !formData.contactPhone ? 'border-red-500' : 'border-gray-200'}`}
+                                        onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                                        value={formData.contactPhone || ''}
+                                    />
+                                    {showErrors && !formData.contactPhone && (
+                                        <p className="text-red-500 text-xs mt-1 font-bold">⚠️ יש להזין טלפון ליצירת קשר</p>
+                                    )}
+                                </div>
+
 
                                 <div className="space-y-4">
                                     <div>
@@ -483,6 +514,24 @@ const SalesWizard = () => {
                                 חזור לעריכת פרטים
                             </button>
                         </QuestionStep>
+                    )}
+
+                    {step === 'SUCCESS' && (
+                        <div className="text-center py-20 animate-in fade-in zoom-in duration-500">
+                            <div className="w-24 h-24 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-teal-500/40">
+                                <Check size={48} className="text-slate-900 stroke-[4px]" />
+                            </div>
+                            <h2 className="text-4xl font-black text-white mb-4">ההזמנה התקבלה!</h2>
+                            <p className="text-gray-400 text-lg mb-12 max-w-md mx-auto">
+                                איזה כיף! שלחנו לך מייל עם כל הפרטים. הנציגים שלנו כבר מתחילים לעבוד על החיבור שלך.
+                            </p>
+                            <button
+                                onClick={() => navigate('/')}
+                                className="px-12 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all"
+                            >
+                                חזרה לדף הבית
+                            </button>
+                        </div>
                     )}
 
                     <div className="hidden lg:block lg:col-span-4">
