@@ -5,7 +5,7 @@ import { Users, ShoppingBag, Calendar, User, Phone, CheckCircle, Ban, ArrowLeft 
 const AdminDashboard = () => {
     const [agents, setAgents] = useState([]);
     const [applications, setApplications] = useState([]);
-    const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'agents'
+    const [activeTab, setActiveTab] = useState('orders');
 
     useEffect(() => {
         fetchData();
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
         try {
             const [agentsRes, appsRes] = await Promise.all([
                 api.get('/admin/agents'),
-                api.get('/applications/all') // הנתיב שהוספת בבק
+                api.get('/applications/all')
             ]);
             setAgents(agentsRes.data);
             setApplications(appsRes.data);
@@ -32,14 +32,12 @@ const AdminDashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans" dir="rtl">
-            {/* Header */}
             <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-black tracking-tighter mb-2">לוח בקרה אדמין</h1>
                     <p className="text-gray-500 font-medium">ניהול סוכנים והזמנות נכנסות בזמן אמת</p>
                 </div>
 
-                {/* Tab Switcher */}
                 <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-xl">
                     <button
                         onClick={() => setActiveTab('orders')}
@@ -60,7 +58,6 @@ const AdminDashboard = () => {
 
             <div className="max-w-7xl mx-auto">
                 {activeTab === 'orders' ? (
-                    /* טבלת הזמנות */
                     <div className="bg-white/[0.02] border border-white/10 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
                         <div className="overflow-x-auto">
                             <table className="w-full text-right border-collapse">
@@ -76,7 +73,6 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {applications.map(app => (
                                         <tr key={app._id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
-                                            {/* פרטי לקוח מורחבים */}
                                             <td className="p-6">
                                                 <div className="flex flex-col gap-1">
                                                     <span className="font-bold text-lg text-white group-hover:text-teal-400 transition-colors">
@@ -90,7 +86,6 @@ const AdminDashboard = () => {
                                                 </div>
                                             </td>
 
-                                            {/* פירוט קווים וחבילות */}
                                             <td className="p-6">
                                                 <div className="flex flex-col gap-2">
                                                     {app.lines?.map((line, index) => (
@@ -132,7 +127,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 ) : (
-                    /* טבלת סוכנים */
                     <div className="bg-white/[0.02] border border-white/10 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
                         <div className="overflow-x-auto">
                             <table className="w-full text-right">

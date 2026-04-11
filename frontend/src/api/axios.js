@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:5003/api',
+    baseURL: import.meta.env.DEV
+        ? 'http://localhost:5003/api'
+        : import.meta.env.VITE_API_URL,
 });
 
-// הזרקת הטוקן לכל בקשה
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -13,7 +14,6 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// טיפול בחסימת משתמש (403)
 api.interceptors.response.use(
     (response) => response,
     (error) => {

@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     role: { type: String, enum: ['Admin', 'Agent'], default: 'Agent' },
     status: { type: String, enum: ['Active', 'Blocked'], default: 'Active' },
     createdAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
