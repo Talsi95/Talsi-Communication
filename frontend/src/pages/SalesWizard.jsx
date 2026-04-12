@@ -299,7 +299,7 @@ const SalesWizard = () => {
                                 <button
                                     onClick={() => {
                                         setStepHistory([...stepHistory, step]);
-                                        setCurrentLine({ ...currentLine, type: 'port' });
+                                        setCurrentLine({ ...currentLine, type: 'porting' });
                                         setStep('NUMBER_PICK');
                                     }}
                                     className="p-8 bg-white/5 border border-white/10 text-white rounded-[2.5rem] font-black text-xl hover:bg-white/10 transition-all"
