@@ -36,13 +36,15 @@ router.post('/save-step', async (req, res) => {
 
 router.get('/all', protect, async (req, res) => {
     try {
-        const userRole = req.user.role ? req.user.role.toLowerCase() : '';
-        const filter = userRole === 'admin' ? {} : { agentId: req.user._id };
-
+        const filter = req.user.role === "Admin" ? {} : { agentId: req.user._id };
         const apps = await Application.find(filter)
             .populate({
                 path: 'lines.package',
                 select: 'name price'
+            })
+            .populate({
+                path: 'agentId',
+                select: 'name email'
             })
             .sort({ createdAt: -1 });
 

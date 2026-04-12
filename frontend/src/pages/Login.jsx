@@ -16,6 +16,7 @@ const Login = () => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('userName', data.name);
             localStorage.setItem('userRole', data.role);
+            localStorage.setItem('userId', data._id);
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'שגיאה בהתחברות');

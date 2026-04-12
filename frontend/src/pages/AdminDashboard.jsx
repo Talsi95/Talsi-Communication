@@ -123,9 +123,17 @@ const AdminDashboard = () => {
                                             </td>
 
                                             <td className="p-6">
-                                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${app.source === 'web' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'}`}>
-                                                    {app.source === 'web' ? 'אתר (B2C)' : 'סוכן (B2B)'}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`w-fit px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${app.source === 'web'
+                                                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                        : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                        }`}>
+                                                        {app.source === 'web' ? 'אתר (B2C)' : 'סוכן (B2B)'}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 mr-1">
+                                                        {app.agentId ? app.agentId.name : 'מערכת אוטומטית'}
+                                                    </span>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

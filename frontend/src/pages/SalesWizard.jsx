@@ -163,6 +163,11 @@ const SalesWizard = () => {
 
     const finalSubmit = async () => {
         try {
+            const userRole = localStorage.getItem('userRole');
+            const userId = localStorage.getItem('userId');
+
+            const isAgent = userRole === 'Agent';
+
             const payload = {
                 fullName: formData.fullName,
                 email: formData.email,
@@ -174,7 +179,8 @@ const SalesWizard = () => {
                     phoneNumber: line.phoneNumber,
                 })),
                 totalAmount: lines.reduce((acc, curr) => acc + (Number(curr.package.price) || 0), 0),
-                source: 'web',
+                source: isAgent ? 'agent' : 'web',
+                agentId: isAgent ? userId : null
             };
 
             await api.post('/applications/save-step', {
