@@ -6,6 +6,7 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -55,15 +56,28 @@ const Login = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className="relative">
                         <label className="block text-sm font-bold text-gray-300 mb-2 mr-1">סיסמה</label>
-                        <input
-                            type="password"
-                            required
-                            className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all shadow-inner"
-                            placeholder="••••••••"
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                required
+                                className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all shadow-inner"
+                                placeholder="••••••••"
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 transition-colors focus:outline-none"
+                            >
+                                {showPassword ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88l-3.29-3.29m7.53 7.53l3.29 3.29M3 3l18 18M10.37 4.37a9 9 0 0 1 10.63 10.63M21 12a9 9 0 0 1-15.63 6.37m-2.48-2.48A9 9 0 0 1 3 12c0-1.29.27-2.53.75-3.65" /><path d="M12 8a4 4 0 0 1 4 4c0 .42-.07.83-.19 1.21m-1.6 1.6A4 4 0 0 1 12 16c-.42 0-.83-.07-1.21-.19" /></svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                )}
+                            </button>
+                        </div>
                     </div>
 
                     <button

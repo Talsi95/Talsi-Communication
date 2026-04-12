@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import CartSummary from '../components/CartSummary';
 import { Check } from 'lucide-react';
+import Loader from '../components/Loader';
 
 const SalesWizard = () => {
 
@@ -191,7 +192,7 @@ const SalesWizard = () => {
     };
 
 
-    if (loading) return <div className="p-10 text-center">טוען חבילות...</div>;
+    if (loading) return <Loader text=" טוען חבילות..." />
 
     return (
         <div className="min-h-screen bg-[#0f172a] font-sans text-slate-100 p-4 md:p-12 relative overflow-hidden" dir="rtl">

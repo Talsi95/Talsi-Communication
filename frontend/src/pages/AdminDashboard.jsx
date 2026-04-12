@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Users, ShoppingBag, Calendar, User, Phone, CheckCircle, Ban, ArrowLeft } from 'lucide-react';
+import Loader from '../components/Loader';
 
 const AdminDashboard = () => {
     const [agents, setAgents] = useState([]);
     const [applications, setApplications] = useState([]);
     const [activeTab, setActiveTab] = useState('orders');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
         fetchData();
     }, []);
 
@@ -21,6 +24,8 @@ const AdminDashboard = () => {
             setApplications(appsRes.data);
         } catch (err) {
             console.error("Error fetching admin data", err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -29,6 +34,8 @@ const AdminDashboard = () => {
         await api.patch(`/admin/agents/${id}/status`, { status: newStatus });
         fetchData();
     };
+
+    if (loading) return <Loader text=' טוען נתונים...' />
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans" dir="rtl">

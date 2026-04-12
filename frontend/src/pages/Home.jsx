@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import PackageCard from '../components/PackageCard';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import image_0 from '../assets/header_image.png'
+import image_0 from '../assets/header_image.png';
+import Loader from '../components/Loader';
 
 const Home = () => {
     const [packages, setPackages] = useState([]);
@@ -86,7 +87,7 @@ const Home = () => {
                 </header>
 
                 {loading ? (
-                    <div className="text-center py-20 text-teal-500/50 animate-pulse">טוען נתונים...</div>
+                    <Loader text="מתחברים לשרת, מיד מתחילים..." subtext="התחברות ראשונית עשויה לקחת כמה שניות" />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                         {packages.map(pkg => (
