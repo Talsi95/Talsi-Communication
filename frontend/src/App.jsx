@@ -6,7 +6,8 @@ import SalesWizard from './pages/SalesWizard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminDashboard from './pages/AdminDashboard';
-
+import ScrollToTop
+  from './components/ScrollToTop';
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
@@ -26,6 +27,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0f172a] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-[#0f172a] to-indigo-950 font-sans text-slate-100">
       <Router>
+        <ScrollToTop />
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
